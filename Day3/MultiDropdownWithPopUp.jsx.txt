@@ -1,0 +1,319 @@
+import ReactDOM from "react-dom";
+import React, { Component } from "react";
+//import ReactMultiSelectCheckboxes from "react-multiselect-checkboxes";
+import Select from "react-select";
+import "./styles.css";
+import { DateRange } from "react-date-range";
+import Modal from "react-modal";
+import ReactTable from "react-table";
+import "react-table/react-table.css";
+import * as moment from "moment";
+
+const customStyles = {
+  content: {
+    top: "50%",
+    left: "50%",
+    right: "auto",
+    bottom: "auto",
+    marginRight: "-50%",
+    transform: "translate(-50%, -50%)"
+  }
+};
+
+const options = [
+  { value: "chocolate", label: "Chocolate" },
+  { value: "strawberry", label: "Strawberry" },
+  { value: "vanilla", label: "Vanilla" }
+];
+
+Modal.setAppElement(document.getElementById("root"));
+
+class Todo extends Component {
+  constructor(props) {
+    super(props);
+    var data = {
+      test: [
+        {
+          consumerName: "LGIM",
+          reportPortfolios: ["Holdings", "Transactions"],
+          reportPortfoliosDetails: [
+            {
+              portfolioType: "Holdings",
+              custodyAccountIDs: ["LGIC02", "LGIC03", "LGIC57"]
+            },
+            {
+              portfolioType: "Transactions",
+              custodyAccountIDs: ["LGIC02", "LGIC03", "LGIC57"]
+            }
+          ]
+        },
+        {
+          consumerName: "Test LGIM",
+          reportPortfolios: ["Holdings sub", "Transactions sub"],
+          reportPortfoliosDetails: [
+            {
+              portfolioType: "Holdings sub",
+              custodyAccountIDs: ["LGIC02", "LGIC03", "LGIC57"]
+            },
+            {
+              portfolioType: "Transactions sub",
+              custodyAccountIDs: ["LGIC02", "LGIC03", "LGIC57"]
+            }
+          ]
+        }
+      ]
+    };
+
+    this.state = {
+      data: data,
+      //options: options,
+      selectedOption: [],
+      //modalIsOpen: false,
+      dateHelper: {},
+      dateData: {},
+      finalSelectedData: [],
+      tableData: []
+    };
+
+    this.handleChangeMain = this.handleChangeMain.bind(this);
+    this.handleChangeSub = this.handleChangeSub.bind(this);
+    this.openModal = this.openModal.bind(this);
+    this.afterOpenModal = this.afterOpenModal.bind(this);
+    this.closeModal = this.closeModal.bind(this);
+    this.handleSelect = this.handleSelect.bind(this);
+    this.handleAddButtonClick = this.handleAddButtonClick.bind(this);
+  }
+
+  openModal() {
+    //this.setState({ modalIsOpen: true });
+  }
+
+  afterOpenModal() {
+    // references are now sync'd and can be accessed.
+    //this.subtitle.style.color = "#f00";
+  }
+
+  closeModal() {
+    let temp = [];
+    this.state.selectedOption.forEach(so => temp.push(so));
+    temp.push(this.state.dateHelper);
+    //this.state.selectedOption.push(this.state.dateHelperthis.state.dateHelper);
+    let finalTemp = [];
+    this.state.finalSelectedData.forEach(fd => finalTemp.push(fd));
+    finalTemp.push(this.state.dateData[this.state.dateHelper.label]);
+    this.setState({
+      selectedOption: temp,
+      modalIsOpen: false,
+      finalSelectedData: finalTemp
+    });
+    console.log("final", this.state);
+  }
+
+  handleChangeMain(event) {
+    console.log(event.target.value);
+    this.setState({
+      mainValue: event.target.value,
+      mainValueData: this.state.data.test.find(
+        obj => obj.consumerName === event.target.value
+      )
+    });
+    console.log(this.state.mainValue);
+  }
+  handleChangeSub(event) {
+    console.log(event.target.value);
+    this.setState({
+      mainValue: event.target.value,
+      mainValueData: this.state.data.test.find(
+        obj => obj.consumerName === event.target.value
+      )
+    });
+    console.log(this.state.mainValue);
+  }
+
+  handleChangeSelect = selectedOption => {
+    console.log(this.state.selectedOption, this.state.selectedOption == 1);
+    if (
+      selectedOption &&
+      selectedOption.length > this.state.selectedOption.length
+    ) {
+      // add
+      let newSelectected = selectedOption.filter(
+        so => !this.state.selectedOption.includes(so)
+      )[0];
+
+      //TODO: remove logic
+      this.state.dateHelper = newSelectected;
+      this.setState({ modalIsOpen: true });
+      //this.setState({ selectedOption });
+    } else if (
+      selectedOption &&
+      selectedOption.length < this.state.selectedOption.length
+    ) {
+      // remove
+      selectedOption = selectedOption == null ? [] : selectedOption;
+      let removed = this.state.selectedOption.filter(
+        so => !selectedOption.includes(so)
+      )[0];
+      let ind = this.state.finalSelectedData.findIndex(
+        fsd => fsd.dateHelper.label === removed.label
+      );
+      this.state.finalSelectedData.splice(ind, 1);
+      //finalSelectedData
+      this.setState({ selectedOption });
+    } else if (
+      typeof selectedOption == typeof null &&
+      this.state.selectedOption.length === 1
+    ) {
+      // remove last one
+      console.log("ins");
+      selectedOption = [];
+      let removed = this.state.selectedOption.filter(
+        so => !selectedOption.includes(so)
+      )[0];
+      let ind = this.state.finalSelectedData.findIndex(
+        fsd => fsd.dateHelper.label === removed.label
+      );
+      this.state.finalSelectedData.splice(ind, 1);
+      //finalSelectedData
+      this.setState({ selectedOption });
+    } else {
+      this.setState({ selectedOption: [] });
+    }
+  };
+
+  handleSelect(date) {
+    console.log("sel", this.state.dateData);
+    let data = {
+      startDate: date.startDate.format("YYYY-MM-DD"),
+      startDateMoment: date.startDate,
+      endDate: date.endDate.format("YYYY-MM-DD"),
+      endDateMoment: date.endDate,
+      // TODO: add the remaining dropdown value
+      dateHelper: this.state.dateHelper
+    };
+    this.state.dateData = {
+      ...this.state.dateData,
+      [this.state.dateHelper.label]: data
+    };
+    this.setState(this.state);
+  }
+
+  handleAddButtonClick() {
+    console.log("add clicked", this.state.finalSelectedData);
+    let temp = this.state.tableData;
+    this.state.finalSelectedData.forEach(fsd => temp.push(fsd));
+    console.log("ins", temp);
+    // clear all the temp storage
+    this.setState({
+      tableData: temp,
+      selectedOption: [],
+      dateHelper: {},
+      dateData: {},
+      finalSelectedData: []
+    });
+  }
+
+  render() {
+    console.log(this.state.mainValue);
+    const { selectedOption } = this.state;
+
+    const columns = [
+      {
+        Header: "StartDate",
+        accessor: "startDate" // String-based value accessors!
+      },
+      {
+        Header: "Age",
+        accessor: "endDate"
+      },
+      {
+        id: "friendName", // Required because our accessor is not a string
+        Header: "Friend Name",
+        accessor: d => d.dateHelper.label // Custom value accessors!
+      },
+      {
+        Header: props => <span>Friend Age</span>, // Custom header components!
+        accessor: "dateHelper.label"
+      }
+    ];
+
+    return (
+      <div>
+        <div>
+          <select
+            id="lang"
+            onChange={this.handleChangeMain}
+            value={this.state.mainValue}
+          >
+            {this.state.data.test.map(main => {
+              return (
+                <option value={main.consumerName}>{main.consumerName}</option>
+              );
+            })}
+          </select>
+        </div>
+        <div>
+          {this.state.mainValue ? (
+            <div>
+              <select
+                id="lang1"
+                onChange={this.handleChangeSub}
+                value={this.state.subValue}
+              >
+                {this.state.mainValueData.reportPortfoliosDetails.map(sub => {
+                  return (
+                    <option value={sub.portfolioType}>
+                      {sub.portfolioType}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <select>
+                <option>Nothing to show</option>
+              </select>
+            </div>
+          )}
+        </div>
+        <div className="width-med">
+          <Select
+            value={selectedOption}
+            onChange={this.handleChangeSelect}
+            options={options}
+            isMulti
+          />
+          {/* <ReactMultiSelectCheckboxes options={this.state.options} /> */}
+        </div>
+        <div>
+          {/* <button onClick={this.openModal}>Open Modal</button> */}
+          <div>
+            <Modal
+              isOpen={this.state.modalIsOpen && this.state.dateHelper}
+              onAfterOpen={this.afterOpenModal}
+              onRequestClose={this.closeModal}
+              style={customStyles}
+              contentLabel="Example Modal"
+            >
+              <button onClick={this.closeModal}>close</button>
+              <DateRange
+                //onInit={this.handleSelect}
+                onChange={this.handleSelect}
+                calendars
+              />
+            </Modal>
+          </div>
+        </div>
+        <div>
+          <button onClick={this.handleAddButtonClick}>Add</button>
+        </div>
+        <div>
+          <ReactTable data={this.state.tableData} columns={columns} />
+        </div>
+      </div>
+    );
+  }
+}
+
+ReactDOM.render(<Todo />, document.getElementById("root"));
